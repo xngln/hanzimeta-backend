@@ -2,19 +2,13 @@
 
 package model
 
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
-}
-
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User *User  `json:"user"`
-}
-
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+type HanziData struct {
+	ID          string `json:"id"`
+	Simplified  string `json:"simplified"`
+	Pinyin      string `json:"pinyin"`
+	Traditional string `json:"traditional"`
+	Japanese    string `json:"japanese"`
+	JundaFreq   *int   `json:"jundaFreq"`
+	GsNum       *int   `json:"gsNum"`
+	HskLvl      *int   `json:"hskLvl"`
 }
