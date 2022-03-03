@@ -7,6 +7,8 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/joho/godotenv"
+	"github.com/xngln/hanzimeta_backend/db"
 	"github.com/xngln/hanzimeta_backend/graph"
 	"github.com/xngln/hanzimeta_backend/graph/generated"
 )
@@ -14,10 +16,16 @@ import (
 const defaultPort = "8080"
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Panic(err)
+	}
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
+
+	db.InitDB()
 
 	srv := handler.NewDefaultServer(
 		generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}),
