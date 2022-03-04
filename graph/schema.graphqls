@@ -11,6 +11,16 @@ type HanziData {
   hskLvl: Int
 }
 
+enum Order {
+    ASC
+    DESC
+}
+
+input SortBy {
+    field: String!
+    order: Order!
+}
+
 type Query {
-    hanzidata: [HanziData!]!
+    hanzidata(sortBy: SortBy): [HanziData!]!
 }

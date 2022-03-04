@@ -2,6 +2,12 @@
 
 package model
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
+
 type HanziData struct {
 	ID          string `json:"id"`
 	Simplified  string `json:"simplified"`
@@ -11,4 +17,50 @@ type HanziData struct {
 	JundaFreq   *int   `json:"jundaFreq"`
 	GsNum       *int   `json:"gsNum"`
 	HskLvl      *int   `json:"hskLvl"`
+}
+
+type SortBy struct {
+	Field string `json:"field"`
+	Order Order  `json:"order"`
+}
+
+type Order string
+
+const (
+	OrderAsc  Order = "ASC"
+	OrderDesc Order = "DESC"
+)
+
+var AllOrder = []Order{
+	OrderAsc,
+	OrderDesc,
+}
+
+func (e Order) IsValid() bool {
+	switch e {
+	case OrderAsc, OrderDesc:
+		return true
+	}
+	return false
+}
+
+func (e Order) String() string {
+	return string(e)
+}
+
+func (e *Order) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Order(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Order", str)
+	}
+	return nil
+}
+
+func (e Order) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

@@ -54,12 +54,12 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Hanzidata func(childComplexity int) int
+		Hanzidata func(childComplexity int, sortBy *model.SortBy) int
 	}
 }
 
 type QueryResolver interface {
-	Hanzidata(ctx context.Context) ([]*model.HanziData, error)
+	Hanzidata(ctx context.Context, sortBy *model.SortBy) ([]*model.HanziData, error)
 }
 
 type executableSchema struct {
@@ -138,7 +138,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Hanzidata(childComplexity), true
+		args, err := ec.field_Query_hanzidata_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Hanzidata(childComplexity, args["sortBy"].(*model.SortBy)), true
 
 	}
 	return 0, false
@@ -203,8 +208,18 @@ type HanziData {
   hskLvl: Int
 }
 
+enum Order {
+    ASC
+    DESC
+}
+
+input SortBy {
+    field: String!
+    order: Order!
+}
+
 type Query {
-    hanzidata: [HanziData!]!
+    hanzidata(sortBy: SortBy): [HanziData!]!
 }
 `, BuiltIn: false},
 }
@@ -226,6 +241,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_hanzidata_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.SortBy
+	if tmp, ok := rawArgs["sortBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
+		arg0, err = ec.unmarshalOSortBy2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐSortBy(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sortBy"] = arg0
 	return args, nil
 }
 
@@ -554,9 +584,16 @@ func (ec *executionContext) _Query_hanzidata(ctx context.Context, field graphql.
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_hanzidata_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Hanzidata(rctx)
+		return ec.resolvers.Query().Hanzidata(rctx, args["sortBy"].(*model.SortBy))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1830,6 +1867,37 @@ func (ec *executionContext) ___Type_specifiedByURL(ctx context.Context, field gr
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputSortBy(ctx context.Context, obj interface{}) (model.SortBy, error) {
+	var it model.SortBy
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "field":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			it.Field, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "order":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+			it.Order, err = ec.unmarshalNOrder2githubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐOrder(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -2504,6 +2572,16 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) unmarshalNOrder2githubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐOrder(ctx context.Context, v interface{}) (model.Order, error) {
+	var res model.Order
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNOrder2githubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐOrder(ctx context.Context, sel ast.SelectionSet, v model.Order) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2812,6 +2890,14 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	}
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOSortBy2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐSortBy(ctx context.Context, v interface{}) (*model.SortBy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputSortBy(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

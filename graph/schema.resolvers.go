@@ -11,9 +11,10 @@ import (
 	"github.com/xngln/hanzimeta_backend/graph/model"
 )
 
-func (r *queryResolver) Hanzidata(ctx context.Context) ([]*model.HanziData, error) {
+func (r *queryResolver) Hanzidata(ctx context.Context, sortBy *model.SortBy) ([]*model.HanziData, error) {
 	var resultHanzi []*model.HanziData
-	dbHanzi := hanzidata.Get()
+
+	dbHanzi := hanzidata.Get(sortBy)
 	for _, hanzi := range dbHanzi {
 		var jfreq *int
 		if hanzi.JundaFreq.Valid {

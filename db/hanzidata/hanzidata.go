@@ -2,8 +2,10 @@ package hanzidata
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/xngln/hanzimeta_backend/db"
+	"github.com/xngln/hanzimeta_backend/graph/model"
 )
 
 type HanziData struct {
@@ -17,8 +19,9 @@ type HanziData struct {
 	HSKLvl      sql.NullInt16 `db:"hsk_lvl"`
 }
 
-func Get() []HanziData {
+func Get(sortby *model.SortBy) []HanziData {
 	hanzi := []HanziData{}
-	db.DB.Select(&hanzi, "SELECT * FROM characters ORDER BY junda_freq ASC LIMIT 10")
+	query := fmt.Sprintf("SELECT * FROM characters ORDER BY %s %s LIMIT 50", sortby.Field, sortby.Order)
+	db.DB.Select(&hanzi, query)
 	return hanzi
 }
