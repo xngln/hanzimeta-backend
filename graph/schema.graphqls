@@ -12,20 +12,20 @@ type HanziData {
 }
 
 type HanziConnection {
-    totalCount: Int
+    totalCount: Int!
     edges: [HanziEdge!]!
     pageInfo: PageInfo!
 }
 
 type HanziEdge {
     cursor: ID!
-    node: HanziData
+    node: HanziData!
 }
 
 type PageInfo {
     startCursor: ID!
     endCursor: ID!
-    hasNextPage: Boolean
+    hasNextPage: Boolean!
 }
 
 enum Order {

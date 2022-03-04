@@ -21,7 +21,7 @@ type HanziData struct {
 
 func Get(sortby *model.SortBy) []HanziData {
 	hanzi := []HanziData{}
-	query := fmt.Sprintf("SELECT * FROM characters ORDER BY %s %s LIMIT 50", sortby.Field, sortby.Order)
+	query := fmt.Sprintf("SELECT * FROM characters ORDER BY %s %s LIMIT 50", *sortby.Field, *sortby.Order)
 	db.DB.Select(&hanzi, query)
 	return hanzi
 }

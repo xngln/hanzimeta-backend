@@ -281,20 +281,20 @@ type HanziData {
 }
 
 type HanziConnection {
-    totalCount: Int
+    totalCount: Int!
     edges: [HanziEdge!]!
     pageInfo: PageInfo!
 }
 
 type HanziEdge {
     cursor: ID!
-    node: HanziData
+    node: HanziData!
 }
 
 type PageInfo {
     startCursor: ID!
     endCursor: ID!
-    hasNextPage: Boolean
+    hasNextPage: Boolean!
 }
 
 enum Order {
@@ -429,11 +429,14 @@ func (ec *executionContext) _HanziConnection_totalCount(ctx context.Context, fie
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*int)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _HanziConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.HanziConnection) (ret graphql.Marshaler) {
@@ -837,11 +840,14 @@ func (ec *executionContext) _HanziEdge_node(ctx context.Context, field graphql.C
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.HanziData)
 	fc.Result = res
-	return ec.marshalOHanziData2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziData(ctx, field.Selections, res)
+	return ec.marshalNHanziData2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziData(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
@@ -939,11 +945,14 @@ func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field gra
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_hanziConnection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2305,6 +2314,9 @@ func (ec *executionContext) _HanziConnection(ctx context.Context, sel ast.Select
 
 			out.Values[i] = innerFunc(ctx)
 
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "edges":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._HanziConnection_edges(ctx, field, obj)
@@ -2455,6 +2467,9 @@ func (ec *executionContext) _HanziEdge(ctx context.Context, sel ast.SelectionSet
 
 			out.Values[i] = innerFunc(ctx)
 
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2503,6 +2518,9 @@ func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet,
 
 			out.Values[i] = innerFunc(ctx)
 
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3016,6 +3034,16 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNHanziData2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziData(ctx context.Context, sel ast.SelectionSet, v *model.HanziData) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._HanziData(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNHanziEdge2ᚕᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.HanziEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -3077,6 +3105,21 @@ func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -3394,13 +3437,6 @@ func (ec *executionContext) marshalOHanziConnection2ᚖgithubᚗcomᚋxnglnᚋha
 		return graphql.Null
 	}
 	return ec._HanziConnection(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOHanziData2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziData(ctx context.Context, sel ast.SelectionSet, v *model.HanziData) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._HanziData(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

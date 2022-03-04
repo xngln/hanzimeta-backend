@@ -12,6 +12,8 @@ import (
 )
 
 func (r *queryResolver) HanziConnection(ctx context.Context, first *int, after *string, sortBy *model.SortBy) (*model.HanziConnection, error) {
+	var connection *model.HanziConnection
+	// var edges []*model.HanziEdge
 	var resultHanzi []*model.HanziData
 
 	dbHanzi := hanzidata.Get(sortBy)
@@ -44,7 +46,7 @@ func (r *queryResolver) HanziConnection(ctx context.Context, first *int, after *
 	}
 
 	// return resultHanzi, nil
-	return nil, nil
+	return connection, nil
 }
 
 // Query returns generated.QueryResolver implementation.

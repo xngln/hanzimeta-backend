@@ -9,7 +9,7 @@ import (
 )
 
 type HanziConnection struct {
-	TotalCount *int         `json:"totalCount"`
+	TotalCount int          `json:"totalCount"`
 	Edges      []*HanziEdge `json:"edges"`
 	PageInfo   *PageInfo    `json:"pageInfo"`
 }
@@ -33,7 +33,7 @@ type HanziEdge struct {
 type PageInfo struct {
 	StartCursor string `json:"startCursor"`
 	EndCursor   string `json:"endCursor"`
-	HasNextPage *bool  `json:"hasNextPage"`
+	HasNextPage bool   `json:"hasNextPage"`
 }
 
 type SortBy struct {
