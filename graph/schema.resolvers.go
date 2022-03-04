@@ -11,7 +11,7 @@ import (
 	"github.com/xngln/hanzimeta_backend/graph/model"
 )
 
-func (r *queryResolver) Hanzidata(ctx context.Context, sortBy *model.SortBy) ([]*model.HanziData, error) {
+func (r *queryResolver) HanziConnection(ctx context.Context, first *int, after *string, sortBy *model.SortBy) (*model.HanziConnection, error) {
 	var resultHanzi []*model.HanziData
 
 	dbHanzi := hanzidata.Get(sortBy)
@@ -43,7 +43,8 @@ func (r *queryResolver) Hanzidata(ctx context.Context, sortBy *model.SortBy) ([]
 		})
 	}
 
-	return resultHanzi, nil
+	// return resultHanzi, nil
+	return nil, nil
 }
 
 // Query returns generated.QueryResolver implementation.

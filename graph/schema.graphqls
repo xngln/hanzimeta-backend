@@ -11,16 +11,33 @@ type HanziData {
   hskLvl: Int
 }
 
+type HanziConnection {
+    totalCount: Int
+    edges: [HanziEdge!]!
+    pageInfo: PageInfo!
+}
+
+type HanziEdge {
+    cursor: ID!
+    node: HanziData
+}
+
+type PageInfo {
+    startCursor: ID!
+    endCursor: ID!
+    hasNextPage: Boolean
+}
+
 enum Order {
     ASC
     DESC
 }
 
 input SortBy {
-    field: String!
-    order: Order!
+    field: String = "junda_freq"
+    order: Order = ASC
 }
 
 type Query {
-    hanzidata(sortBy: SortBy): [HanziData!]!
+    hanziConnection(first: Int = 50, after: ID, sortBy: SortBy): HanziConnection
 }

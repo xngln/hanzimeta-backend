@@ -8,7 +8,6 @@ import (
 	"errors"
 	"strconv"
 	"sync"
-	"sync/atomic"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -42,6 +41,12 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	HanziConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
 	HanziData struct {
 		GsNum       func(childComplexity int) int
 		HskLvl      func(childComplexity int) int
@@ -53,13 +58,24 @@ type ComplexityRoot struct {
 		Traditional func(childComplexity int) int
 	}
 
+	HanziEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	PageInfo struct {
+		EndCursor   func(childComplexity int) int
+		HasNextPage func(childComplexity int) int
+		StartCursor func(childComplexity int) int
+	}
+
 	Query struct {
-		Hanzidata func(childComplexity int, sortBy *model.SortBy) int
+		HanziConnection func(childComplexity int, first *int, after *string, sortBy *model.SortBy) int
 	}
 }
 
 type QueryResolver interface {
-	Hanzidata(ctx context.Context, sortBy *model.SortBy) ([]*model.HanziData, error)
+	HanziConnection(ctx context.Context, first *int, after *string, sortBy *model.SortBy) (*model.HanziConnection, error)
 }
 
 type executableSchema struct {
@@ -76,6 +92,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "HanziConnection.edges":
+		if e.complexity.HanziConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.HanziConnection.Edges(childComplexity), true
+
+	case "HanziConnection.pageInfo":
+		if e.complexity.HanziConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.HanziConnection.PageInfo(childComplexity), true
+
+	case "HanziConnection.totalCount":
+		if e.complexity.HanziConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.HanziConnection.TotalCount(childComplexity), true
 
 	case "HanziData.gsNum":
 		if e.complexity.HanziData.GsNum == nil {
@@ -133,17 +170,52 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.HanziData.Traditional(childComplexity), true
 
-	case "Query.hanzidata":
-		if e.complexity.Query.Hanzidata == nil {
+	case "HanziEdge.cursor":
+		if e.complexity.HanziEdge.Cursor == nil {
 			break
 		}
 
-		args, err := ec.field_Query_hanzidata_args(context.TODO(), rawArgs)
+		return e.complexity.HanziEdge.Cursor(childComplexity), true
+
+	case "HanziEdge.node":
+		if e.complexity.HanziEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.HanziEdge.Node(childComplexity), true
+
+	case "PageInfo.endCursor":
+		if e.complexity.PageInfo.EndCursor == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.EndCursor(childComplexity), true
+
+	case "PageInfo.hasNextPage":
+		if e.complexity.PageInfo.HasNextPage == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.HasNextPage(childComplexity), true
+
+	case "PageInfo.startCursor":
+		if e.complexity.PageInfo.StartCursor == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.StartCursor(childComplexity), true
+
+	case "Query.hanziConnection":
+		if e.complexity.Query.HanziConnection == nil {
+			break
+		}
+
+		args, err := ec.field_Query_hanziConnection_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.Hanzidata(childComplexity, args["sortBy"].(*model.SortBy)), true
+		return e.complexity.Query.HanziConnection(childComplexity, args["first"].(*int), args["after"].(*string), args["sortBy"].(*model.SortBy)), true
 
 	}
 	return 0, false
@@ -208,18 +280,35 @@ type HanziData {
   hskLvl: Int
 }
 
+type HanziConnection {
+    totalCount: Int
+    edges: [HanziEdge!]!
+    pageInfo: PageInfo!
+}
+
+type HanziEdge {
+    cursor: ID!
+    node: HanziData
+}
+
+type PageInfo {
+    startCursor: ID!
+    endCursor: ID!
+    hasNextPage: Boolean
+}
+
 enum Order {
     ASC
     DESC
 }
 
 input SortBy {
-    field: String!
-    order: Order!
+    field: String = "junda_freq"
+    order: Order = ASC
 }
 
 type Query {
-    hanzidata(sortBy: SortBy): [HanziData!]!
+    hanziConnection(first: Int = 50, after: ID, sortBy: SortBy): HanziConnection
 }
 `, BuiltIn: false},
 }
@@ -244,18 +333,36 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_hanzidata_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_hanziConnection_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.SortBy
-	if tmp, ok := rawArgs["sortBy"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
-		arg0, err = ec.unmarshalOSortBy2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐSortBy(ctx, tmp)
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["sortBy"] = arg0
+	args["first"] = arg0
+	var arg1 *string
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg1, err = ec.unmarshalOID2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg1
+	var arg2 *model.SortBy
+	if tmp, ok := rawArgs["sortBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
+		arg2, err = ec.unmarshalOSortBy2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐSortBy(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sortBy"] = arg2
 	return args, nil
 }
 
@@ -296,6 +403,108 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _HanziConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.HanziConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "HanziConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _HanziConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.HanziConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "HanziConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.HanziEdge)
+	fc.Result = res
+	return ec.marshalNHanziEdge2ᚕᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziEdgeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _HanziConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.HanziConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "HanziConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐPageInfo(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _HanziData_id(ctx context.Context, field graphql.CollectedField, obj *model.HanziData) (ret graphql.Marshaler) {
 	defer func() {
@@ -568,7 +777,176 @@ func (ec *executionContext) _HanziData_hskLvl(ctx context.Context, field graphql
 	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_hanzidata(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _HanziEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.HanziEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "HanziEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _HanziEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.HanziEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "HanziEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.HanziData)
+	fc.Result = res
+	return ec.marshalOHanziData2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziData(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PageInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartCursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PageInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EndCursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PageInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HasNextPage, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_hanziConnection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -585,7 +963,7 @@ func (ec *executionContext) _Query_hanzidata(ctx context.Context, field graphql.
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_hanzidata_args(ctx, rawArgs)
+	args, err := ec.field_Query_hanziConnection_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -593,21 +971,18 @@ func (ec *executionContext) _Query_hanzidata(ctx context.Context, field graphql.
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Hanzidata(rctx, args["sortBy"].(*model.SortBy))
+		return ec.resolvers.Query().HanziConnection(rctx, args["first"].(*int), args["after"].(*string), args["sortBy"].(*model.SortBy))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.HanziData)
+	res := resTmp.(*model.HanziConnection)
 	fc.Result = res
-	return ec.marshalNHanziData2ᚕᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziDataᚄ(ctx, field.Selections, res)
+	return ec.marshalOHanziConnection2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1874,13 +2249,20 @@ func (ec *executionContext) unmarshalInputSortBy(ctx context.Context, obj interf
 		asMap[k] = v
 	}
 
+	if _, present := asMap["field"]; !present {
+		asMap["field"] = "junda_freq"
+	}
+	if _, present := asMap["order"]; !present {
+		asMap["order"] = "ASC"
+	}
+
 	for k, v := range asMap {
 		switch k {
 		case "field":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
-			it.Field, err = ec.unmarshalNString2string(ctx, v)
+			it.Field, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -1888,7 +2270,7 @@ func (ec *executionContext) unmarshalInputSortBy(ctx context.Context, obj interf
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-			it.Order, err = ec.unmarshalNOrder2githubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐOrder(ctx, v)
+			it.Order, err = ec.unmarshalOOrder2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐOrder(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -1905,6 +2287,54 @@ func (ec *executionContext) unmarshalInputSortBy(ctx context.Context, obj interf
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var hanziConnectionImplementors = []string{"HanziConnection"}
+
+func (ec *executionContext) _HanziConnection(ctx context.Context, sel ast.SelectionSet, obj *model.HanziConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, hanziConnectionImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HanziConnection")
+		case "totalCount":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._HanziConnection_totalCount(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		case "edges":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._HanziConnection_edges(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pageInfo":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._HanziConnection_pageInfo(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var hanziDataImplementors = []string{"HanziData"}
 
@@ -1998,6 +2428,92 @@ func (ec *executionContext) _HanziData(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
+var hanziEdgeImplementors = []string{"HanziEdge"}
+
+func (ec *executionContext) _HanziEdge(ctx context.Context, sel ast.SelectionSet, obj *model.HanziEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, hanziEdgeImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HanziEdge")
+		case "cursor":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._HanziEdge_cursor(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "node":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._HanziEdge_node(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var pageInfoImplementors = []string{"PageInfo"}
+
+func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet, obj *model.PageInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pageInfoImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PageInfo")
+		case "startCursor":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._PageInfo_startCursor(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "endCursor":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._PageInfo_endCursor(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "hasNextPage":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._PageInfo_hasNextPage(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2017,7 +2533,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "hanzidata":
+		case "hanziConnection":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -2026,10 +2542,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_hanzidata(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
+				res = ec._Query_hanziConnection(ctx, field)
 				return res
 			}
 
@@ -2503,7 +3016,7 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNHanziData2ᚕᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziDataᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.HanziData) graphql.Marshaler {
+func (ec *executionContext) marshalNHanziEdge2ᚕᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.HanziEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2527,7 +3040,7 @@ func (ec *executionContext) marshalNHanziData2ᚕᚖgithubᚗcomᚋxnglnᚋhanzi
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNHanziData2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziData(ctx, sel, v[i])
+			ret[i] = ec.marshalNHanziEdge2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2547,14 +3060,14 @@ func (ec *executionContext) marshalNHanziData2ᚕᚖgithubᚗcomᚋxnglnᚋhanzi
 	return ret
 }
 
-func (ec *executionContext) marshalNHanziData2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziData(ctx context.Context, sel ast.SelectionSet, v *model.HanziData) graphql.Marshaler {
+func (ec *executionContext) marshalNHanziEdge2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziEdge(ctx context.Context, sel ast.SelectionSet, v *model.HanziEdge) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
-	return ec._HanziData(ctx, sel, v)
+	return ec._HanziEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
@@ -2572,14 +3085,14 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) unmarshalNOrder2githubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐOrder(ctx context.Context, v interface{}) (model.Order, error) {
-	var res model.Order
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNOrder2githubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐOrder(ctx context.Context, sel ast.SelectionSet, v model.Order) graphql.Marshaler {
-	return v
+func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PageInfo(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -2876,6 +3389,36 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) marshalOHanziConnection2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziConnection(ctx context.Context, sel ast.SelectionSet, v *model.HanziConnection) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._HanziConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOHanziData2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐHanziData(ctx context.Context, sel ast.SelectionSet, v *model.HanziData) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._HanziData(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalID(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalID(*v)
+	return res
+}
+
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
 	if v == nil {
 		return nil, nil
@@ -2890,6 +3433,22 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	}
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOOrder2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐOrder(ctx context.Context, v interface{}) (*model.Order, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.Order)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOOrder2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐOrder(ctx context.Context, sel ast.SelectionSet, v *model.Order) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOSortBy2ᚖgithubᚗcomᚋxnglnᚋhanzimeta_backendᚋgraphᚋmodelᚐSortBy(ctx context.Context, v interface{}) (*model.SortBy, error) {

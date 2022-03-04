@@ -8,6 +8,12 @@ import (
 	"strconv"
 )
 
+type HanziConnection struct {
+	TotalCount *int         `json:"totalCount"`
+	Edges      []*HanziEdge `json:"edges"`
+	PageInfo   *PageInfo    `json:"pageInfo"`
+}
+
 type HanziData struct {
 	ID          string `json:"id"`
 	Simplified  string `json:"simplified"`
@@ -19,9 +25,20 @@ type HanziData struct {
 	HskLvl      *int   `json:"hskLvl"`
 }
 
+type HanziEdge struct {
+	Cursor string     `json:"cursor"`
+	Node   *HanziData `json:"node"`
+}
+
+type PageInfo struct {
+	StartCursor string `json:"startCursor"`
+	EndCursor   string `json:"endCursor"`
+	HasNextPage *bool  `json:"hasNextPage"`
+}
+
 type SortBy struct {
-	Field string `json:"field"`
-	Order Order  `json:"order"`
+	Field *string `json:"field"`
+	Order *Order  `json:"order"`
 }
 
 type Order string
