@@ -26,6 +26,7 @@ func main() {
 	}
 
 	db.InitDB()
+	println("successfully connected to db")
 
 	srv := handler.NewDefaultServer(
 		generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}),
