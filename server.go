@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -17,6 +18,7 @@ const defaultPort = "8080"
 
 func main() {
 	env := os.Getenv("HANZIMETA_ENV")
+	fmt.Printf("this is the env var: %s zzz", env)
 	if env != "PRODUCTION" {
 		err := godotenv.Load()
 		if err != nil {
