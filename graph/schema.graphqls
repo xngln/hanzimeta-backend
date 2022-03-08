@@ -39,5 +39,5 @@ input SortBy {
 }
 
 type Query {
-    hanziConnection(first: Int = 50, after: ID, sortBy: SortBy): HanziConnection
+    hanziConnection(first: Int = 50, after: String, sortBy: SortBy = {}): HanziConnection
 }

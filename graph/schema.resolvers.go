@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	b64 "encoding/base64"
 
 	"github.com/xngln/hanzimeta_backend/db/hanzidata"
 	"github.com/xngln/hanzimeta_backend/graph/generated"
@@ -12,11 +13,18 @@ import (
 )
 
 func (r *queryResolver) HanziConnection(ctx context.Context, first *int, after *string, sortBy *model.SortBy) (*model.HanziConnection, error) {
-	var connection *model.HanziConnection
-	// var edges []*model.HanziEdge
-	var resultHanzi []*model.HanziData
+	var err error
+	connection := &model.HanziConnection{}
+	connection.TotalCount, err = hanzidata.GetCount()
+	if err != nil {
+		return nil, err
+	}
 
-	dbHanzi := hanzidata.Get(sortBy)
+	dbHanzi, pageInfo, err := hanzidata.Get(sortBy, *first, after)
+	if err != nil {
+		return nil, err
+	}
+	connection.PageInfo = pageInfo
 	for _, hanzi := range dbHanzi {
 		var jfreq *int
 		if hanzi.JundaFreq.Valid {
@@ -33,16 +41,20 @@ func (r *queryResolver) HanziConnection(ctx context.Context, first *int, after *
 			hsk = new(int)
 			*hsk = int(hanzi.HSKLvl.Int16)
 		}
-		resultHanzi = append(resultHanzi, &model.HanziData{
-			ID:          hanzi.ID,
-			Simplified:  hanzi.Simplified,
-			Pinyin:      hanzi.Pinyin,
-			Traditional: hanzi.Traditional,
-			Japanese:    hanzi.Japanese,
-			JundaFreq:   jfreq,
-			GsNum:       gsnum,
-			HskLvl:      hsk,
-		})
+		edge := &model.HanziEdge{
+			Cursor: b64.StdEncoding.EncodeToString([]byte(hanzi.ID)),
+			Node: &model.HanziData{
+				ID:          hanzi.ID,
+				Simplified:  hanzi.Simplified,
+				Pinyin:      hanzi.Pinyin,
+				Traditional: hanzi.Traditional,
+				Japanese:    hanzi.Japanese,
+				JundaFreq:   jfreq,
+				GsNum:       gsnum,
+				HskLvl:      hsk,
+			},
+		}
+		connection.Edges = append(connection.Edges, edge)
 	}
 
 	// return resultHanzi, nil
