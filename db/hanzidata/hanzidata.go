@@ -83,7 +83,6 @@ func buildCursorQuery(charID int, sortby *model.SortBy, first int) (string, erro
 	q := fmt.Sprintf("SELECT %s FROM characters WHERE char_id=%d;", *sortby.Field, charID)
 	err := db.DB.Get(&c, q)
 	if err != nil {
-		println(err.Error())
 		return "", fmt.Errorf("failed to get cursor sort field value, charID: %d", charID)
 	}
 
@@ -161,7 +160,6 @@ func Get(sortby *model.SortBy, first int, after *string) ([]HanziData, *model.Pa
 	if err != nil {
 		return nil, nil, err
 	}
-	fmt.Printf("finished building query: %s\n", query)
 	db.DB.Select(&hanzi, query)
 
 	if len(hanzi) == 0 {
