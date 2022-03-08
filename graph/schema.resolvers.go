@@ -7,9 +7,9 @@ import (
 	"context"
 	b64 "encoding/base64"
 
-	"github.com/xngln/hanzimeta_backend/db/hanzidata"
-	"github.com/xngln/hanzimeta_backend/graph/generated"
-	"github.com/xngln/hanzimeta_backend/graph/model"
+	"github.com/xngln/hanzimeta-backend/db/hanzidata"
+	"github.com/xngln/hanzimeta-backend/graph/generated"
+	"github.com/xngln/hanzimeta-backend/graph/model"
 )
 
 func (r *queryResolver) HanziConnection(ctx context.Context, first *int, after *string, sortBy *model.SortBy) (*model.HanziConnection, error) {

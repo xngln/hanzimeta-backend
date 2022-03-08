@@ -1,4 +1,4 @@
-module github.com/xngln/hanzimeta_backend
+module github.com/xngln/hanzimeta-backend
 
 go 1.17
 

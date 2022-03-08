@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xngln/hanzimeta_backend/db"
-	"github.com/xngln/hanzimeta_backend/graph/model"
+	"github.com/xngln/hanzimeta-backend/db"
+	"github.com/xngln/hanzimeta-backend/graph/model"
 )
 
 type HanziData struct {

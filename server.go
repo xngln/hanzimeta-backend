@@ -8,9 +8,9 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/joho/godotenv"
-	"github.com/xngln/hanzimeta_backend/db"
-	"github.com/xngln/hanzimeta_backend/graph"
-	"github.com/xngln/hanzimeta_backend/graph/generated"
+	"github.com/xngln/hanzimeta-backend/db"
+	"github.com/xngln/hanzimeta-backend/graph"
+	"github.com/xngln/hanzimeta-backend/graph/generated"
 )
 
 const defaultPort = "8080"
