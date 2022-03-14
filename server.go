@@ -8,6 +8,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 	"github.com/xngln/hanzimeta-backend/db"
 	"github.com/xngln/hanzimeta-backend/graph"
 	"github.com/xngln/hanzimeta-backend/graph/generated"
@@ -30,12 +31,15 @@ func main() {
 
 	db.InitDB()
 
+	mux := http.NewServeMux()
+
 	srv := handler.NewDefaultServer(
 		generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}),
 	)
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+	mux.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	mux.Handle("/query", srv)
+	handler := cors.Default().Handler(mux)
 
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, handler))
 }
