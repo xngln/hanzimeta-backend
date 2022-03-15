@@ -39,7 +39,13 @@ func main() {
 
 	mux.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	mux.Handle("/query", srv)
-	handler := cors.Default().Handler(mux)
+
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{
+			os.Getenv("UI_ORIGIN"),
+		},
+	})
+	handler := c.Handler(mux)
 
 	log.Fatal(http.ListenAndServe(":"+port, handler))
 }
