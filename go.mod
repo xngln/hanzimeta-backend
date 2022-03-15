@@ -8,6 +8,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/joho/godotenv v1.4.0
 	github.com/lib/pq v1.10.4
+	github.com/rs/cors v1.8.2
 	github.com/vektah/gqlparser/v2 v2.4.0
 )
 
@@ -18,7 +19,6 @@ require (
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
 	github.com/matryer/moq v0.2.3 // indirect
 	github.com/mitchellh/mapstructure v1.2.3 // indirect
-	github.com/rs/cors v1.8.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/urfave/cli/v2 v2.3.0 // indirect
 	golang.org/x/mod v0.5.1 // indirect

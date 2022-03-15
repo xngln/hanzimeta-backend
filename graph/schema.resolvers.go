@@ -20,7 +20,7 @@ func (r *queryResolver) HanziConnection(ctx context.Context, first *int, after *
 		return nil, err
 	}
 
-	dbHanzi, pageInfo, err := hanzidata.Get(sortBy, *first, after)
+	dbHanzi, pageInfo, err := hanzidata.GetPage(sortBy, *first, after)
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +59,41 @@ func (r *queryResolver) HanziConnection(ctx context.Context, first *int, after *
 
 	// return resultHanzi, nil
 	return connection, nil
+}
+
+func (r *queryResolver) Hanzi(ctx context.Context, character string) ([]*model.HanziData, error) {
+	var hanzi []*model.HanziData
+	dbHanzi := hanzidata.GetByChar(character)
+
+	for _, h := range dbHanzi {
+		var jfreq *int
+		if h.JundaFreq.Valid {
+			jfreq = new(int)
+			*jfreq = int(h.JundaFreq.Int16)
+		}
+		var gsnum *int
+		if h.GSNum.Valid {
+			gsnum = new(int)
+			*gsnum = int(h.GSNum.Int16)
+		}
+		var hsk *int
+		if h.HSKLvl.Valid {
+			hsk = new(int)
+			*hsk = int(h.HSKLvl.Int16)
+		}
+
+		hanzi = append(hanzi, &model.HanziData{
+			ID:          h.ID,
+			Simplified:  h.Simplified,
+			Pinyin:      h.Pinyin,
+			Traditional: h.Traditional,
+			Japanese:    h.Japanese,
+			JundaFreq:   jfreq,
+			GsNum:       gsnum,
+			HskLvl:      hsk,
+		})
+	}
+	return hanzi, nil
 }
 
 // Query returns generated.QueryResolver implementation.

@@ -152,7 +152,7 @@ func buildOffsetQuery(pageNum int, sortby *model.SortBy, first int) string {
 	return query
 }
 
-func Get(sortby *model.SortBy, first int, after *string) ([]HanziData, *model.PageInfo, error) {
+func GetPage(sortby *model.SortBy, first int, after *string) ([]HanziData, *model.PageInfo, error) {
 	pageInfo := &model.PageInfo{}
 	hanzi := []HanziData{}
 
@@ -178,6 +178,22 @@ func Get(sortby *model.SortBy, first int, after *string) ([]HanziData, *model.Pa
 	pageInfo.EndCursor = b64.StdEncoding.EncodeToString([]byte(hanzi[len(hanzi)-1].ID))
 
 	return hanzi, pageInfo, nil
+}
+
+func GetByChar(character string) []HanziData {
+	hanzi := []HanziData{}
+	query := fmt.Sprintf(
+		`SELECT * FROM characters
+		WHERE 
+		Simplified = '%s' OR
+		Traditional = '%s' OR
+		Japanese = '%s';`,
+		character,
+		character,
+		character,
+	)
+	db.DB.Select(&hanzi, query)
+	return hanzi
 }
 
 func GetCount() (int, error) {
