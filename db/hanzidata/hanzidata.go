@@ -32,8 +32,8 @@ func decodeCursor(cursor string) (string, error) {
 }
 
 func buildQuery(sortby *model.SortBy, first int, after *string) (string, error) {
-	// no cursor, just return a query for the first n rows
-	if after == nil {
+	// no cursor or empty cursor, just return a query for the first n rows
+	if after == nil || *after == "" {
 		return fmt.Sprintf(
 			"SELECT * FROM characters ORDER BY %s %s, char_id %s LIMIT %d;",
 			*sortby.Field,
@@ -182,7 +182,7 @@ func GetPage(sortby *model.SortBy, first int, after *string) ([]HanziData, *mode
 		pageInfo.HasNextPage = true
 		hanzi = hanzi[:len(hanzi)-1] // remove the first+1th element
 	}
-	if after == nil {
+	if after == nil || *after == "" {
 		pageInfo.HasPrevPage = false
 	} else {
 		decodedCursor, err := decodeCursor(*after)
