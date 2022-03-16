@@ -23,6 +23,14 @@ type HanziData struct {
 	HSKLvl      sql.NullInt16 `db:"hsk_lvl"`
 }
 
+func decodeCursor(cursor string) (string, error) {
+	b, err := b64.StdEncoding.DecodeString(cursor)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode the cursor: %s", cursor)
+	}
+	return string(b), nil
+}
+
 func buildQuery(sortby *model.SortBy, first int, after *string) (string, error) {
 	// no cursor, just return a query for the first n rows
 	if after == nil {
@@ -36,17 +44,18 @@ func buildQuery(sortby *model.SortBy, first int, after *string) (string, error) 
 	}
 
 	var query string
-	var decodedCursor string
-	b, err := b64.StdEncoding.DecodeString(*after)
+	decodedCursor, err := decodeCursor(*after)
 	if err != nil {
-		return query, fmt.Errorf("failed to decode the cursor: %s", decodedCursor)
+		return query, err
 	}
-	decodedCursor = string(b)
 
 	// if string starts with "page ", it is an offset cursor (format: "page <number>")
 	// otherwise it is a pointer cursor (the cursor is a json of the actual hanzidata element)
 	if strings.HasPrefix(decodedCursor, "page") {
 		words := strings.Fields(decodedCursor)
+		if len(words) < 2 {
+			return query, fmt.Errorf("failed to get page num from offset cursor: %s", decodedCursor)
+		}
 		pageNum, err := strconv.Atoi(words[1])
 		if err != nil {
 			return query, fmt.Errorf("failed to get page num from offset cursor: %s", decodedCursor)
@@ -172,6 +181,20 @@ func GetPage(sortby *model.SortBy, first int, after *string) ([]HanziData, *mode
 	} else {
 		pageInfo.HasNextPage = true
 		hanzi = hanzi[:len(hanzi)-1] // remove the first+1th element
+	}
+	if after == nil {
+		pageInfo.HasPrevPage = false
+	} else {
+		decodedCursor, err := decodeCursor(*after)
+		if err != nil {
+			return nil, nil, err
+		}
+		cursorWords := strings.Fields(decodedCursor)
+		if len(cursorWords) >= 2 && cursorWords[0] == "page" && cursorWords[1] == "1" {
+			pageInfo.HasPrevPage = false
+		} else {
+			pageInfo.HasPrevPage = true
+		}
 	}
 
 	pageInfo.StartCursor = b64.StdEncoding.EncodeToString([]byte(hanzi[0].ID))
