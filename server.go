@@ -32,8 +32,8 @@ func main() {
 
 	// new relic setup
 	newRelicApp, err := newrelic.NewApplication(
-		newrelic.ConfigAppName(os.Getenv("NEWRELIC_APP_NAME")),
-		newrelic.ConfigLicense(os.Getenv("NEWRELIC_LICENSE_KEY")),
+		newrelic.ConfigAppName(os.Getenv("NEW_RELIC_APP_NAME")),
+		newrelic.ConfigLicense(os.Getenv("NEW_RELIC_LICENSE_KEY")),
 		newrelic.ConfigDistributedTracerEnabled(true),
 	)
 	if err != nil {
