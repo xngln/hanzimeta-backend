@@ -32,8 +32,8 @@ func main() {
 
 	// new relic setup
 	newRelicApp, err := newrelic.NewApplication(
-		newrelic.ConfigAppName("hanzimeta-backend"),
-		newrelic.ConfigLicense("770103c130aaec4203fa2a8e1c22d5f03986NRAL"),
+		newrelic.ConfigAppName(os.Getenv("NEWRELIC_APP_NAME")),
+		newrelic.ConfigLicense(os.Getenv("NEWRELIC_LICENSE_KEY")),
 		newrelic.ConfigDistributedTracerEnabled(true),
 	)
 	if err != nil {
