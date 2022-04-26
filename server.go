@@ -8,6 +8,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/joho/godotenv"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/rs/cors"
 	"github.com/xngln/hanzimeta-backend/db"
 	"github.com/xngln/hanzimeta-backend/graph"
@@ -29,6 +30,16 @@ func main() {
 		port = defaultPort
 	}
 
+	// new relic setup
+	newRelicApp, err := newrelic.NewApplication(
+		newrelic.ConfigAppName("hanzimeta-backend"),
+		newrelic.ConfigLicense("770103c130aaec4203fa2a8e1c22d5f03986NRAL"),
+		newrelic.ConfigDistributedTracerEnabled(true),
+	)
+	if err != nil {
+		log.Panic(err)
+	}
+
 	db.InitDB()
 
 	mux := http.NewServeMux()
@@ -38,7 +49,7 @@ func main() {
 	)
 
 	mux.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	mux.Handle("/query", srv)
+	mux.Handle(newrelic.WrapHandle(newRelicApp, "/query", srv))
 
 	var c *cors.Cors
 	if env == "PRODUCTION" {
