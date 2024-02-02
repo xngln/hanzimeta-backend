@@ -223,7 +223,7 @@ func GetCount() (int, error) {
 	var count int
 	err := db.DB.Get(&count, "SELECT COUNT(char_id) FROM characters;")
 	if err != nil {
-		return count, fmt.Errorf("failed to get count from 'characters' db")
+		return count, fmt.Errorf("failed to get count from 'characters' db with error: %s", err.Error())
 	}
 	return count, nil
 }
